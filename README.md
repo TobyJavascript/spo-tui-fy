@@ -77,4 +77,5 @@ Once running, you can use the following commands to control playback:
 - playlists: List your playlists.
 - playlist: Play a selected playlist.
 - track: Search and play a specific track.
+- help: Prints out all commands for user to see.
 - quit: Exit the control panel.
