@@ -30,13 +30,14 @@ def safe_call(func, success_msg=None):
         print(f"[!] Unexpected error: {e}")
 
 def next_track():
-    safe_call(lambda: sp.next_track(), "[->] Skipped to next track.")
+    safe_call(lambda: sp.next_track(), "\n[->] Skipped to next track.")
 
 def previous_track():
-    safe_call(lambda: sp.previous_track(), "[<-]  Went back to previous track.")
+    safe_call(lambda: sp.previous_track(), "\n[<-]  Went back to previous track.")
 
 def pause_resume():
     try:
+        print("")
         playback = sp.current_playback()
         if playback and playback.get("is_playing"):
             safe_call(lambda: sp.pause_playback(), "[||] Paused playback.")
@@ -49,6 +50,7 @@ def pause_resume():
 
 def show_current():
     try:
+        print("")
         playback = sp.current_playback()
         if playback and playback.get("is_playing"):
             item = playback["item"]
@@ -65,6 +67,7 @@ def show_current():
         
 def set_volume():
     try:
+        print("")
         vol_input = input("Set volume (0-100): ").strip()
         vol = int(vol_input)
         if vol < 0:
@@ -81,6 +84,7 @@ def set_volume():
         
 def toggle_shuffle():
     try:
+        print("")
         playback = sp.current_playback()
         if playback:
             current = playback['shuffle_state']
@@ -92,6 +96,7 @@ def toggle_shuffle():
 
 def cycle_repeat():
     try:
+        print("")
         playback = sp.current_playback()
         if playback:
             current = playback['repeat_state']
@@ -105,6 +110,7 @@ def cycle_repeat():
 
 def show_progress():
     try:
+        print("")
         playback = sp.current_playback()
         if playback and playback.get("item"):
             progress = playback["progress_ms"] // 1000
@@ -117,6 +123,7 @@ def show_progress():
 
 def list_playlists():
     try:
+        print("")
         playlists = sp.current_user_playlists()
         for i, playlist in enumerate(playlists['items']):
             print(f"{i+1}: {playlist['name']} (Tracks: {playlist['tracks']['total']})")
@@ -125,6 +132,7 @@ def list_playlists():
 
 def play_playlist():
     try:
+        print("")
         playlists = sp.current_user_playlists()
         for i, playlist in enumerate(playlists['items']):
             print(f"{i+1}: {playlist['name']}")
@@ -139,6 +147,7 @@ def play_playlist():
 
 def play_track():
     try:
+        print("")
         query = input("Enter track name to search: ").strip()
         results = sp.search(q=query, type='track', limit=5)
         tracks = results['tracks']['items']
@@ -156,10 +165,32 @@ def play_track():
     except Exception as e:
         print(f"[!] Could not play track: {e}")
 
+def show_help():
+    print("\nAvailable commands:")
+    for cmd, desc in COMMANDS.items():
+        print(f"  {cmd:<10} → {desc}")
+
+COMMANDS = {
+    "next": "Skip to next track",
+    "prev": "Go back to previous track",
+    "pause": "Pause or resume playback",
+    "show": "Show currently playing track",
+    "volume": "Set volume (0-100)",
+    "shuffle": "Toggle shuffle on/off",
+    "repeat": "Cycle repeat mode (off/context/track)",
+    "progress": "Show playback progress of current track",
+    "playlists": "List your playlists",
+    "playlist": "Play a selected playlist",
+    "track": "Search and play a specific track",
+    "help": "Show this help message",
+    "quit": "Exit the controller"
+}
+
 def main():
     print("Spotify Controller ready. Type a command:")
     while True:
-        cmd = input("Command (next, prev, pause, show, volume, shuffle, repeat, progress, playlists, playlist, track, quit): ").strip().lower()
+        cmd = input("\nCommand (type 'help' to list all commands): ").strip().lower()
+        
         if cmd == "next": next_track()
         elif cmd == "prev": previous_track()
         elif cmd == "pause": pause_resume()
@@ -171,11 +202,12 @@ def main():
         elif cmd == "playlists": list_playlists()
         elif cmd == "playlist": play_playlist()
         elif cmd == "track": play_track()
+        elif cmd == "help": show_help()
         elif cmd == "quit":
             print("Exiting Spotify Controller.")
             break
         else:
-            print("Unknown command. Try: next, prev, pause, show, volume, shuffle, repeat, progress, playlists, playlist, track, quit")
+            print("Unknown command. Type 'help' to see all commands.")
 
 if __name__ == "__main__":
     main()
