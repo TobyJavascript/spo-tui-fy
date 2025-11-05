@@ -1,6 +1,6 @@
 # Spotify TUI Control Panel
 
-**Spotify TUI Control Panel** is a terminal-based interface that allows you to control Spotify playback directly from your terminal. With simple commands, you can **skip tracks**, **go back to previous tracks**, **pause/resume** playback, **view the currently playing track** and **change volume**. It provides a lightweight and intuitive way to interact with Spotify without leaving the command line.
+**Spotify TUI Control Panel** is a terminal-based interface that allows you to control Spotify playback directly from your terminal. With simple commands like **skip tracks**, **go back to previous tracks**, **pause/resume** playback, **view the currently playing track** etc. It provides a lightweight and intuitive way to interact with Spotify without leaving the command line.
 
 ---
 
@@ -71,4 +71,7 @@ Once running, you can use the following commands to control playback:
 - pause: Pause or resume playback.
 - show: Display information about the currently playing track.
 - volume: Prompts user for a volume value (0-100).
+- shuffle: Toggle shuffle on/off.
+- repeat: Cycle repeat modes (off, context, track).
+- progress: Show current track playback progress (minutes:seconds).
 - quit: Exit the control panel.
