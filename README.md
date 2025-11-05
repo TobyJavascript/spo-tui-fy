@@ -74,4 +74,7 @@ Once running, you can use the following commands to control playback:
 - shuffle: Toggle shuffle on/off.
 - repeat: Cycle repeat modes (off, context, track).
 - progress: Show current track playback progress (minutes:seconds).
+- playlists: List your playlists.
+- playlist: Play a selected playlist.
+- track: Search and play a specific track.
 - quit: Exit the control panel.
