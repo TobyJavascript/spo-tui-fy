@@ -62,11 +62,27 @@ def show_current():
         print(f"[!] Could not fetch current track: {e.msg or str(e)}")
     except Exception as e:
         print(f"[!] Unexpected error: {e}")
+        
+def set_volume():
+    try:
+        vol_input = input("Set volume (0-100): ").strip()
+        vol = int(vol_input)
+        if vol < 0:
+            vol = 0
+        elif vol > 100:
+            vol = 100
+        safe_call(lambda: sp.volume(vol), f"Volume set to {vol}%")
+    except ValueError:
+        print("[!] Invalid input. Please enter a number between 0 and 100.")
+    except SpotifyException as e:
+        print(f"[!] Could not set volume: {e.msg or str(e)}")
+    except Exception as e:
+        print(f"[!] Unexpected error: {e}")
 
 def main():
     print("Spotify Controller ready. Type a command:")
     while True:
-        cmd = input("Command (next, prev, pause, show, quit): ").strip().lower()
+        cmd = input("Command (next, prev, pause, show, volume, quit): ").strip().lower()
         if cmd == "next":
             next_track()
         elif cmd == "prev":
@@ -75,6 +91,8 @@ def main():
             pause_resume()
         elif cmd == "show":
             show_current()
+        elif cmd == "volume":
+            set_volume()
         elif cmd == "quit":
             print("Exiting Spotify Controller.")
             break
