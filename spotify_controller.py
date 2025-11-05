@@ -19,7 +19,6 @@ sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
 ))
 
 def safe_call(func, success_msg=None):
-    """Safely execute a Spotify API call with friendly error handling."""
     try:
         func()
         if success_msg:
@@ -56,6 +55,7 @@ def show_current():
             name = item["name"]
             artist = item["artists"][0]["name"]
             print(f"Now playing: {name} — {artist}")
+            show_progress()
         else:
             print("[||] No music playing.")
     except SpotifyException as e:
@@ -78,26 +78,60 @@ def set_volume():
         print(f"[!] Could not set volume: {e.msg or str(e)}")
     except Exception as e:
         print(f"[!] Unexpected error: {e}")
+        
+def toggle_shuffle():
+    try:
+        playback = sp.current_playback()
+        if playback:
+            current = playback['shuffle_state']
+            safe_call(lambda: sp.shuffle(not current), f"Shuffle set to {not current}")
+        else:
+            print("[!] No active playback found.")
+    except Exception as e:
+        print(f"[!] Error toggling shuffle: {e}")
+
+def cycle_repeat():
+    try:
+        playback = sp.current_playback()
+        if playback:
+            current = playback['repeat_state']
+            states = ['off', 'context', 'track']
+            next_state = states[(states.index(current) + 1) % 3]
+            safe_call(lambda: sp.repeat(next_state), f"Repeat set to {next_state}")
+        else:
+            print("[!] No active playback found.")
+    except Exception as e:
+        print(f"[!] Error changing repeat mode: {e}")
+
+def show_progress():
+    try:
+        playback = sp.current_playback()
+        if playback and playback.get("item"):
+            progress = playback["progress_ms"] // 1000
+            duration = playback["item"]["duration_ms"] // 1000
+            print(f"Progress: {progress//60}:{progress%60:02d} / {duration//60}:{duration%60:02d}")
+        else:
+            print("[!] No active track playing.")
+    except Exception as e:
+        print(f"[!] Could not fetch progress: {e}")
 
 def main():
     print("Spotify Controller ready. Type a command:")
     while True:
-        cmd = input("Command (next, prev, pause, show, volume, quit): ").strip().lower()
-        if cmd == "next":
-            next_track()
-        elif cmd == "prev":
-            previous_track()
-        elif cmd == "pause":
-            pause_resume()
-        elif cmd == "show":
-            show_current()
-        elif cmd == "volume":
-            set_volume()
+        cmd = input("Command (next, prev, pause, show, volume, shuffle, repeat, progress, quit): ").strip().lower()
+        if cmd == "next": next_track()
+        elif cmd == "prev": previous_track()
+        elif cmd == "pause": pause_resume()
+        elif cmd == "show": show_current()
+        elif cmd == "volume": set_volume()
+        elif cmd == "shuffle": toggle_shuffle()
+        elif cmd == "repeat": cycle_repeat()
+        elif cmd == "progress": show_progress()
         elif cmd == "quit":
             print("Exiting Spotify Controller.")
             break
         else:
-            print("Unknown command. Try: next, prev, pause, show, quit")
+            print("Unknown command. Try: next, prev, pause, show, volume, shuffle, repeat, progress, quit")
 
 if __name__ == "__main__":
     main()
