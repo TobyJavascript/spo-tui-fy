@@ -64,7 +64,41 @@ def show_current():
         print(f"[!] Could not fetch current track: {e.msg or str(e)}")
     except Exception as e:
         print(f"[!] Unexpected error: {e}")
-        
+
+local_queue = []
+
+def show_queue():
+    print("")
+    if not local_queue:
+        print("[0] Local queue is empty.")
+    else:
+        print("Local queue:")
+        for i, track in enumerate(local_queue):
+            print(f"{i+1}: {track['name']} — {track['artists'][0]['name']}")
+        show_current()
+
+def add_to_queue():
+    try:
+        print("")
+        query = input("Enter track name to add to queue: ").strip()
+        results = sp.search(q=query, type='track', limit=5)
+        tracks = results['tracks']['items']
+        if not tracks:
+            print("[0] No tracks found.")
+            return
+        for i, track in enumerate(tracks):
+            print(f"{i+1}: {track['name']} — {track['artists'][0]['name']}")
+        choice = int(input("Select track number to add to queue: ").strip()) - 1
+        if 0 <= choice < len(tracks):
+            track = tracks[choice]
+            uri = track['uri']
+            safe_call(lambda: sp.add_to_queue(uri), f"Added to Spotify queue: {track['name']}")
+            local_queue.append(track)
+        else:
+            print("[!] Invalid track number.")
+    except Exception as e:
+        print(f"[!] Could not add track to queue: {e}")
+
 def set_volume():
     try:
         print("")
@@ -175,6 +209,8 @@ COMMANDS = {
     "prev": "Go back to previous track",
     "pause": "Pause or resume playback",
     "show": "Show currently playing track",
+    "queue": "Show upcoming tracks in the queue",
+    "add": "Search and add a track to the queue",
     "volume": "Set volume (0-100)",
     "shuffle": "Toggle shuffle on/off",
     "repeat": "Cycle repeat mode (off/context/track)",
@@ -195,6 +231,8 @@ def main():
         elif cmd == "prev": previous_track()
         elif cmd == "pause": pause_resume()
         elif cmd == "show": show_current()
+        elif cmd == "queue": show_queue()
+        elif cmd == "add": add_to_queue()
         elif cmd == "volume": set_volume()
         elif cmd == "shuffle": toggle_shuffle()
         elif cmd == "repeat": cycle_repeat()
