@@ -29,7 +29,7 @@
 ### Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/spotify-tui-control-panel.git
+git clone https://github.com/TobyJavascript/spotify-tui-control-panel.git
 cd spotify-tui-control-panel
 ```
 
