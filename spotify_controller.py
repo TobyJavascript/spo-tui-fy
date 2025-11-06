@@ -18,6 +18,8 @@ sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
     cache_path=CACHE_PATH
 ))
 
+local_queue = []
+
 def safe_call(func, success_msg=None):
     try:
         func()
@@ -56,8 +58,18 @@ def show_current():
             item = playback["item"]
             name = item["name"]
             artist = item["artists"][0]["name"]
+            album = get_album()
             print(f"Now playing: {name} — {artist}")
-            show_progress()
+            if album:
+                print(f"Album: {album['name']}")
+            else:
+                print("Album: [No album info]")
+            cover_url = get_album_cover_url()
+            if cover_url:
+                print(f"Cover URL: {cover_url}")
+            else:
+                print("Cover URL: [NO cover URL]")
+            print(f"Progress: {get_progress()}")
         else:
             print("[||] No music playing.")
     except SpotifyException as e:
@@ -65,7 +77,30 @@ def show_current():
     except Exception as e:
         print(f"[!] Unexpected error: {e}")
 
-local_queue = []
+def get_album():
+    try:
+        playback = sp.current_playback()
+        if playback and playback.get("item"):
+            return playback["item"]["album"]
+        else:
+            return None
+    except Exception as e:
+        print(f"[!] Could not fetch album: {e}")
+        return None
+
+def get_album_cover_url():
+    try:
+        playback = sp.current_playback()
+        if playback and playback.get("item"):
+            album = playback["item"]["album"]
+            if album.get("images"):
+                return album["images"][0]["url"]
+            else:
+                return "No image"
+        else:
+            return None
+    except Exception as e:
+        return f"[!] Could not fetch album cover: {e}"
 
 def show_queue():
     print("")
@@ -142,18 +177,24 @@ def cycle_repeat():
     except Exception as e:
         print(f"[!] Error changing repeat mode: {e}")
 
-def show_progress():
+def get_progress():
     try:
-        print("")
         playback = sp.current_playback()
         if playback and playback.get("item"):
             progress = playback["progress_ms"] // 1000
             duration = playback["item"]["duration_ms"] // 1000
-            print(f"Progress: {progress//60}:{progress%60:02d} / {duration//60}:{duration%60:02d}")
+            return f"{progress//60}:{progress%60:02d} / {duration//60}:{duration%60:02d}"
         else:
-            print("[!] No active track playing.")
+            return "[!] No active track playing."
     except Exception as e:
-        print(f"[!] Could not fetch progress: {e}")
+        return f"[!] Could not fetch progress: {e}"
+
+def show_progress():
+    try:
+        print("")
+        print(f"Progress: {get_progress()}")
+    except Exception as e:
+        print(f"[!] Could not show progress: {e}")
 
 def list_playlists():
     try:
