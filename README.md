@@ -70,6 +70,8 @@ Once running, you can use the following commands to control playback:
 - prev: Go back to the previous track.
 - pause: Pause or resume playback.
 - show: Display information about the currently playing track.
+- queue: Show upcoming tracks in the queue.
+- add: Search and add a track to the queue.
 - volume: Prompts user for a volume value (0-100).
 - shuffle: Toggle shuffle on/off.
 - repeat: Cycle repeat modes (off, context, track).
