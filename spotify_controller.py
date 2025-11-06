@@ -3,7 +3,11 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from spotipy.exceptions import SpotifyException
 import os
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
 
+# ------------------ Spotify setup ------------------ #
 CLIENT_ID = "YOUR_CLIENT_ID"
 CLIENT_SECRET = "YOUR_CLIENT_SECRET"
 REDIRECT_URI = "http://127.0.0.1:8888/callback"
@@ -19,274 +23,247 @@ sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
 ))
 
 local_queue = []
+console = Console()
 
-def safe_call(func, success_msg=None):
-    try:
-        func()
-        if success_msg:
-            print(success_msg)
-    except SpotifyException as e:
-        reason = e.msg or str(e)
-        print(f"[!] Spotify command failed: {reason}")
-    except Exception as e:
-        print(f"[!] Unexpected error: {e}")
-
-def next_track():
-    safe_call(lambda: sp.next_track(), "\n[->] Skipped to next track.")
-
-def previous_track():
-    safe_call(lambda: sp.previous_track(), "\n[<-]  Went back to previous track.")
-
-def pause_resume():
-    try:
-        print("")
-        playback = sp.current_playback()
-        if playback and playback.get("is_playing"):
-            safe_call(lambda: sp.pause_playback(), "[||] Paused playback.")
-        else:
-            safe_call(lambda: sp.start_playback(), "[>] Resumed playback.")
-    except SpotifyException as e:
-        print(f"[!] Could not pause/resume: {e.msg or str(e)}")
-    except Exception as e:
-        print(f"[!] Unexpected error: {e}")
-
-def show_current():
-    try:
-        print("")
-        playback = sp.current_playback()
-        if playback and playback.get("is_playing"):
-            item = playback["item"]
-            name = item["name"]
-            artist = item["artists"][0]["name"]
-            album = get_album()
-            print(f"Now playing: {name} — {artist}")
-            if album:
-                print(f"Album: {album['name']}")
-            else:
-                print("Album: [No album info]")
-            cover_url = get_album_cover_url()
-            if cover_url:
-                print(f"Cover URL: {cover_url}")
-            else:
-                print("Cover URL: [NO cover URL]")
-            print(f"Progress: {get_progress()}")
-        else:
-            print("[||] No music playing.")
-    except SpotifyException as e:
-        print(f"[!] Could not fetch current track: {e.msg or str(e)}")
-    except Exception as e:
-        print(f"[!] Unexpected error: {e}")
-
-def get_album():
-    try:
-        playback = sp.current_playback()
-        if playback and playback.get("item"):
-            return playback["item"]["album"]
-        else:
-            return None
-    except Exception as e:
-        print(f"[!] Could not fetch album: {e}")
-        return None
-
-def get_album_cover_url():
-    try:
-        playback = sp.current_playback()
-        if playback and playback.get("item"):
-            album = playback["item"]["album"]
-            if album.get("images"):
-                return album["images"][0]["url"]
-            else:
-                return "No image"
-        else:
-            return None
-    except Exception as e:
-        return f"[!] Could not fetch album cover: {e}"
-
-def show_queue():
-    print("")
-    if not local_queue:
-        print("[0] Local queue is empty.")
-    else:
-        print("Local queue:")
-        for i, track in enumerate(local_queue):
-            print(f"{i+1}: {track['name']} — {track['artists'][0]['name']}")
-        show_current()
-
-def add_to_queue():
-    try:
-        print("")
-        query = input("Enter track name to add to queue: ").strip()
-        results = sp.search(q=query, type='track', limit=5)
-        tracks = results['tracks']['items']
-        if not tracks:
-            print("[0] No tracks found.")
-            return
-        for i, track in enumerate(tracks):
-            print(f"{i+1}: {track['name']} — {track['artists'][0]['name']}")
-        choice = int(input("Select track number to add to queue: ").strip()) - 1
-        if 0 <= choice < len(tracks):
-            track = tracks[choice]
-            uri = track['uri']
-            safe_call(lambda: sp.add_to_queue(uri), f"Added to Spotify queue: {track['name']}")
-            local_queue.append(track)
-        else:
-            print("[!] Invalid track number.")
-    except Exception as e:
-        print(f"[!] Could not add track to queue: {e}")
-
-def set_volume():
-    try:
-        print("")
-        vol_input = input("Set volume (0-100): ").strip()
-        vol = int(vol_input)
-        if vol < 0:
-            vol = 0
-        elif vol > 100:
-            vol = 100
-        safe_call(lambda: sp.volume(vol), f"Volume set to {vol}%")
-    except ValueError:
-        print("[!] Invalid input. Please enter a number between 0 and 100.")
-    except SpotifyException as e:
-        print(f"[!] Could not set volume: {e.msg or str(e)}")
-    except Exception as e:
-        print(f"[!] Unexpected error: {e}")
-        
-def toggle_shuffle():
-    try:
-        print("")
-        playback = sp.current_playback()
-        if playback:
-            current = playback['shuffle_state']
-            safe_call(lambda: sp.shuffle(not current), f"Shuffle set to {not current}")
-        else:
-            print("[!] No active playback found.")
-    except Exception as e:
-        print(f"[!] Error toggling shuffle: {e}")
-
-def cycle_repeat():
-    try:
-        print("")
-        playback = sp.current_playback()
-        if playback:
-            current = playback['repeat_state']
-            states = ['off', 'context', 'track']
-            next_state = states[(states.index(current) + 1) % 3]
-            safe_call(lambda: sp.repeat(next_state), f"Repeat set to {next_state}")
-        else:
-            print("[!] No active playback found.")
-    except Exception as e:
-        print(f"[!] Error changing repeat mode: {e}")
-
-def get_progress():
-    try:
-        playback = sp.current_playback()
-        if playback and playback.get("item"):
-            progress = playback["progress_ms"] // 1000
-            duration = playback["item"]["duration_ms"] // 1000
-            return f"{progress//60}:{progress%60:02d} / {duration//60}:{duration%60:02d}"
-        else:
-            return "[!] No active track playing."
-    except Exception as e:
-        return f"[!] Could not fetch progress: {e}"
-
-def show_progress():
-    try:
-        print("")
-        print(f"Progress: {get_progress()}")
-    except Exception as e:
-        print(f"[!] Could not show progress: {e}")
-
-def list_playlists():
-    try:
-        print("")
-        playlists = sp.current_user_playlists()
-        for i, playlist in enumerate(playlists['items']):
-            print(f"{i+1}: {playlist['name']} (Tracks: {playlist['tracks']['total']})")
-    except Exception as e:
-        print(f"[!] Could not fetch playlists: {e}")
-
-def play_playlist():
-    try:
-        print("")
-        playlists = sp.current_user_playlists()
-        for i, playlist in enumerate(playlists['items']):
-            print(f"{i+1}: {playlist['name']}")
-        choice = int(input("Select playlist number to play: ").strip()) - 1
-        if 0 <= choice < len(playlists['items']):
-            uri = playlists['items'][choice]['uri']
-            safe_call(lambda: sp.start_playback(context_uri=uri), f"Playing playlist: {playlists['items'][choice]['name']}")
-        else:
-            print("[!] Invalid playlist number.")
-    except Exception as e:
-        print(f"[!] Could not play playlist: {e}")
-
-def play_track():
-    try:
-        print("")
-        query = input("Enter track name to search: ").strip()
-        results = sp.search(q=query, type='track', limit=5)
-        tracks = results['tracks']['items']
-        if not tracks:
-            print("[!] No tracks found.")
-            return
-        for i, track in enumerate(tracks):
-            print(f"{i+1}: {track['name']} — {track['artists'][0]['name']}")
-        choice = int(input("Select track number to play: ").strip()) - 1
-        if 0 <= choice < len(tracks):
-            uri = tracks[choice]['uri']
-            safe_call(lambda: sp.start_playback(uris=[uri]), f"Playing track: {tracks[choice]['name']}")
-        else:
-            print("[!] Invalid track number.")
-    except Exception as e:
-        print(f"[!] Could not play track: {e}")
-
-def show_help():
-    print("\nAvailable commands:")
-    for cmd, desc in COMMANDS.items():
-        print(f"  {cmd:<10} → {desc}")
-
-COMMANDS = {
+# ------------------ Help text ------------------ #
+HELP_TEXT = {
     "next": "Skip to next track",
-    "prev": "Go back to previous track",
+    "prev": "Go to previous track",
     "pause": "Pause or resume playback",
-    "show": "Show currently playing track",
-    "queue": "Show upcoming tracks in the queue",
-    "add": "Search and add a track to the queue",
-    "volume": "Set volume (0-100)",
+    "volume": "Set playback volume (0-100)",
     "shuffle": "Toggle shuffle on/off",
     "repeat": "Cycle repeat mode (off/context/track)",
-    "progress": "Show playback progress of current track",
-    "playlists": "List your playlists",
+    "queue": "Show local queue",
+    "add": "Search and add a track to queue",
+    "track": "Search and play a track",
+    "show": "Show currently playing track",
+    "playlists": "List user playlists",
     "playlist": "Play a selected playlist",
-    "track": "Search and play a specific track",
     "help": "Show this help message",
     "quit": "Exit the controller"
 }
 
+# ------------------ Utility ------------------ #
+def safe_call(func, success_msg=None):
+    try:
+        func()
+        if success_msg:
+            console.print(f"[green]{success_msg}[/green]")
+    except SpotifyException as e:
+        reason = e.msg or str(e)
+        console.print(f"[red][!] Spotify command failed: {reason}[/red]")
+    except Exception as e:
+        console.print(f"[red][!] Unexpected error: {e}[/red]")
+
+def get_current_track():
+    """Return current playing track info or None"""
+    try:
+        playback = sp.current_playback()
+        if not playback or not playback.get("item"):
+            return None
+        item = playback["item"]
+        return {
+            "title": item.get("name"),
+            "artists": ", ".join(a["name"] for a in item.get("artists", [])),
+            "album": item.get("album", {}).get("name"),
+            "progress": f"{playback.get('progress_ms',0)//60000}:{(playback.get('progress_ms',0)//1000)%60:02d} / {item.get('duration_ms',0)//60000}:{(item.get('duration_ms',0)//1000)%60:02d}",
+            "is_playing": playback.get("is_playing", False)
+        }
+    except Exception:
+        return None
+
+def current_track_alone():
+    current_track()
+    console.input("\nPress Enter to continue...")
+
+def current_track():
+    track = get_current_track()
+    if track:
+        status = "▶ Playing" if track["is_playing"] else "⏸ Paused"
+        console.print(Panel(f"[bold]{track['title']}[/bold] — {track['artists']}\nAlbum: {track['album']}\nProgress: {track['progress']}\nStatus: {status}", title="Now Playing"))
+    else:
+        console.print(Panel("[yellow]No track currently playing[/yellow]", title="Now Playing"))
+
+# ------------------ Command wrappers ------------------ #
+def cmd_next():
+    safe_call(lambda: sp.next_track(), "Skipped to next track.")
+    current_track()
+    console.input("\nPress Enter to continue...")
+
+def cmd_prev():
+    safe_call(lambda: sp.previous_track(), "Went back to previous track.")
+    current_track()
+    console.input("\nPress Enter to continue...")
+
+def cmd_pause_resume():
+    playback = sp.current_playback()
+    if playback and playback.get("is_playing"):
+        safe_call(lambda: sp.pause_playback(), "Playback paused")
+        current_track()
+        console.input("\nPress Enter to unpause...")
+        safe_call(lambda: sp.start_playback(), "Playback resumed")
+    else:
+        safe_call(lambda: sp.start_playback(), "Playback resumed")
+
+def cmd_volume():
+    vol = console.input("Set volume (0-100): ")
+    try:
+        vol = max(0, min(100, int(vol)))
+        safe_call(lambda: sp.volume(vol), f"Volume set to {vol}%")
+        console.print(f"\nVolume is now: [cyan]{vol}%[/cyan]")
+    except ValueError:
+        console.print("[red]Invalid input. Must be 0-100[/red]")
+    finally:
+        console.input("Press Enter to continue...")
+
+def cmd_shuffle():
+    playback = sp.current_playback()
+    if playback:
+        current = playback["shuffle_state"]
+        new_state = not current
+        safe_call(lambda: sp.shuffle(new_state), f"Shuffle set to {new_state}")
+        console.print(f"\nCurrent shuffle state: [cyan]{new_state}[/cyan]")
+    else:
+        console.print("[red]No active playback found[/red]")
+    console.input("Press Enter to continue...")
+
+def cmd_repeat():
+    playback = sp.current_playback()
+    if playback:
+        states = ["off", "context", "track"]
+        current = playback["repeat_state"]
+        next_state = states[(states.index(current) + 1) % 3]
+        safe_call(lambda: sp.repeat(next_state), f"Repeat set to {next_state}")
+        console.print(f"\nCurrent repeat state: [cyan]{next_state}[/cyan]")
+    else:
+        console.print("[red]No active playback found[/red]")
+    console.input("Press Enter to continue...")
+
+def cmd_show_queue():
+    if not local_queue:
+        console.print("[yellow]Local queue is empty[/yellow]")
+    else:
+        table = Table(title="Local Queue")
+        table.add_column("Index", style="bold green")
+        table.add_column("Title", style="yellow")
+        table.add_column("Artists", style="cyan")
+        for i, t in enumerate(local_queue):
+            table.add_row(str(i+1), t['name'], t['artists'][0]['name'])
+        console.print(table)
+    current_track()
+    console.input("\nPress Enter to continue...")
+
+def cmd_add_track():
+    query = console.input("Track name to add to queue: ").strip()
+    results = sp.search(q=query, type="track", limit=5)["tracks"]["items"]
+    if not results:
+        console.print("[yellow]No tracks found[/yellow]")
+        return
+    table = Table(title="Search Results")
+    table.add_column("Index", style="green")
+    table.add_column("Title", style="yellow")
+    table.add_column("Artists", style="cyan")
+    for i, t in enumerate(results):
+        table.add_row(str(i), t['name'], t['artists'][0]['name'])
+    console.print(table)
+    idx = int(console.input("Select track index: "))
+    if 0 <= idx < len(results):
+        track = results[idx]
+        safe_call(lambda: sp.add_to_queue(track['uri']), f"Added {track['name']} to queue")
+        local_queue.append(track)
+    else:
+        console.print("[red]Invalid track number[/red]")
+    console.input("\nPress Enter to continue...")
+
+def cmd_play_track_and_show_current():
+    cmd_play_track()
+    current_track()
+    console.input("\nPress Enter to continue...")
+
+def cmd_play_track():
+    query = console.input("Track name to play: ").strip()
+    results = sp.search(q=query, type="track", limit=5)["tracks"]["items"]
+    if not results:
+        console.print("[yellow]No tracks found[/yellow]")
+        return
+    table = Table(title="Search Results")
+    table.add_column("Index", style="green")
+    table.add_column("Title", style="yellow")
+    table.add_column("Artists", style="cyan")
+    for i, t in enumerate(results):
+        table.add_row(str(i), t['name'], t['artists'][0]['name'])
+    console.print(table)
+    idx = int(console.input("Select track index: "))
+    if 0 <= idx < len(results):
+        track = results[idx]
+        safe_call(lambda: sp.start_playback(uris=[track['uri']]), f"Playing {track['name']}")
+    else:
+        console.print("[red]Invalid track number[/red]")
+
+def cmd_list_playlists():
+    pls = sp.current_user_playlists()["items"]
+    table = Table(title="User Playlists")
+    table.add_column("Index", style="green")
+    table.add_column("Name", style="yellow")
+    table.add_column("Tracks", style="cyan")
+    for i, p in enumerate(pls):
+        table.add_row(str(i), p['name'], str(p['tracks']['total']))
+    console.print(table)
+    console.input("\nPress Enter to continue...")
+
+def cmd_play_playlist():
+    pls = sp.current_user_playlists()["items"]
+    table = Table(title="User Playlists")
+    table.add_column("Index", style="green")
+    table.add_column("Name", style="yellow")
+    for i, p in enumerate(pls):
+        table.add_row(str(i), p['name'])
+    console.print(table)
+    idx = int(console.input("Select playlist index: "))
+    if 0 <= idx < len(pls):
+        safe_call(lambda: sp.start_playback(context_uri=pls[idx]['uri']), f"Playing {pls[idx]['name']}")
+    else:
+        console.print("[red]Invalid playlist number[/red]")
+    console.input("\nPress Enter to continue...")
+
+def show_help():
+    """Show this help message"""
+    table = Table(title="Available Commands")
+    table.add_column("Command", style="bold green")
+    table.add_column("Description", style="yellow")
+    for name, desc in HELP_TEXT.items():
+        table.add_row(name, desc)
+    console.print(table)
+    console.input("\nPress Enter to continue...")
+
+# ------------------ Command dictionary ------------------ #
+COMMANDS = {
+    "next": cmd_next,
+    "prev": cmd_prev,
+    "pause": cmd_pause_resume,
+    "volume": cmd_volume,
+    "shuffle": cmd_shuffle,
+    "repeat": cmd_repeat,
+    "queue": cmd_show_queue,
+    "add": cmd_add_track,
+    "track": cmd_play_track_and_show_current,
+    "show": current_track_alone,
+    "playlists": cmd_list_playlists,
+    "playlist": cmd_play_playlist,
+    "help": show_help,
+    "quit": exit,
+}
+
+# ------------------ Main Loop ------------------ #
 def main():
-    print("Spotify Controller ready. Type a command:")
     while True:
-        cmd = input("\nCommand (type 'help' to list all commands): ").strip().lower()
-        
-        if cmd == "next": next_track()
-        elif cmd == "prev": previous_track()
-        elif cmd == "pause": pause_resume()
-        elif cmd == "show": show_current()
-        elif cmd == "queue": show_queue()
-        elif cmd == "add": add_to_queue()
-        elif cmd == "volume": set_volume()
-        elif cmd == "shuffle": toggle_shuffle()
-        elif cmd == "repeat": cycle_repeat()
-        elif cmd == "progress": show_progress()
-        elif cmd == "playlists": list_playlists()
-        elif cmd == "playlist": play_playlist()
-        elif cmd == "track": play_track()
-        elif cmd == "help": show_help()
-        elif cmd == "quit":
-            print("Exiting Spotify Controller.")
-            break
+        console.clear()
+        console.print(Panel("[bold cyan]Spotify Controller[/bold cyan]\nType a command (help to list)", expand=False))
+        cmd = console.input("Command: ").strip().lower()
+        if cmd in COMMANDS:
+            COMMANDS[cmd]()
         else:
-            print("Unknown command. Type 'help' to see all commands.")
+            console.print(f"[red]Unknown command:[/red] {cmd}")
 
 if __name__ == "__main__":
     main()
