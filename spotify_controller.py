@@ -3,9 +3,11 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from spotipy.exceptions import SpotifyException
 import os
+from pathlib import Path
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
+from ascii_titles import show_title
 
 # ------------------ Spotify setup ------------------ #
 CLIENT_ID = "YOUR_CLIENT_ID"
@@ -83,6 +85,23 @@ def current_track():
         console.print(Panel(f"[bold]{track['title']}[/bold] — {track['artists']}\nAlbum: {track['album']}\nProgress: {track['progress']}\nStatus: {status}", title="Now Playing"))
     else:
         console.print(Panel("[yellow]No track currently playing[/yellow]", title="Now Playing"))
+
+def print_title(console):
+    TITLE_FILE = Path(__file__).parent / "logos.txt"
+    
+    width = console.size.width
+    height = console.size.height
+
+    index = 5
+    indent = 2
+
+    if width > 49 and height > 17:
+
+        if width <= 67 or height <= 27:
+            index = 2
+            indent = 3
+
+        show_title(TITLE_FILE, index=index, color="bold green", border_color="cyan", indent=indent)
 
 # ------------------ Command wrappers ------------------ #
 def cmd_next():
@@ -258,6 +277,9 @@ COMMANDS = {
 def main():
     while True:
         console.clear()
+
+        print_title(console)
+
         console.print(Panel("[bold cyan]Spotify Controller[/bold cyan]\nType a command (help to list)", expand=False))
         cmd = console.input("Command: ").strip().lower()
         if cmd in COMMANDS:

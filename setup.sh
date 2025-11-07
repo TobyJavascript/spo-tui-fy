@@ -16,7 +16,7 @@ fi
 
 # --- Copy files from current folder to project directory ---
 echo "Copying files..."
-cp -r spotify_controller.py requirements.txt "$PROJECT_DIR"/
+cp -r spotify_controller.py ascii_titles.py logos.txt requirements.txt "$PROJECT_DIR"/
 
 # --- Set up Python virtual environment ---
 VENV_DIR="$HOME/spotify_env"
