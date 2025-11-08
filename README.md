@@ -75,9 +75,12 @@ Once running, you can use the following commands to control playback:
 - volume: Prompts user for a volume value (0-100).
 - shuffle: Toggle shuffle on/off.
 - repeat: Cycle repeat modes (off, context, track).
-- progress: Show current track playback progress (minutes:seconds).
-- playlists: List your playlists.
+- showlists: List your playlists.
+- showlist: List tracks in playlist.
 - playlist: Play a selected playlist.
+- createlist: Create a new playlist.
+- addtolist: Add a song to a playlist.
+- removefromlist: Remove a song from a list.
 - track: Search and play a specific track.
 - help: Prints out all commands for user to see.
 - quit: Exit the control panel.
