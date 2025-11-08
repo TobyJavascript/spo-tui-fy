@@ -1,6 +1,16 @@
+```
+   _____                 ________  ______     ____     
+  / ___/____  ____      /_  __/ / / /  _/    / __/_  __
+  \__ \/ __ \/ __ \______/ / / / / // /_____/ /_/ / / /
+ ___/ / /_/ / /_/ /_____/ / / /_/ // /_____/ __/ /_/ / 
+/____/ .___/\____/     /_/  \____/___/    /_/  \__, /  
+    /_/                                       /____/   
+```
 # Spo-TUI-fy
 
 **Spo-TUI-fy** is a terminal-based interface that allows you to control Spotify playback directly from your terminal. With simple commands like **skip tracks**, **go back to previous tracks**, **pause/resume** playback, **view the currently playing track** etc. It provides a lightweight and intuitive way to interact with Spotify without leaving the command line.
+
+![Spo-TUI-fy](images/image.png)
 
 ---
 
