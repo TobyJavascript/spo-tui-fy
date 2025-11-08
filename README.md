@@ -1,6 +1,6 @@
-# Spotify TUI Control Panel
+# Spo-TUI-fy
 
-**Spotify TUI Control Panel** is a terminal-based interface that allows you to control Spotify playback directly from your terminal. With simple commands like **skip tracks**, **go back to previous tracks**, **pause/resume** playback, **view the currently playing track** etc. It provides a lightweight and intuitive way to interact with Spotify without leaving the command line.
+**Spo-TUI-fy** is a terminal-based interface that allows you to control Spotify playback directly from your terminal. With simple commands like **skip tracks**, **go back to previous tracks**, **pause/resume** playback, **view the currently playing track** etc. It provides a lightweight and intuitive way to interact with Spotify without leaving the command line.
 
 ---
 
@@ -29,7 +29,7 @@
 ### Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/TobyJavascript/spotify-tui-control-panel.git
+git clone https://github.com/TobyJavascript/spo-tui-fy.git
 cd spotify-tui-control-panel
 ```
 
