@@ -18,32 +18,49 @@ load_dotenv(dotenv_path)
 CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 REDIRECT_URI = "http://127.0.0.1:8888/callback"
-SCOPE = "user-read-playback-state user-modify-playback-state playlist-read-private"
+SCOPE = (
+    "user-read-playback-state "
+    "user-modify-playback-state "
+    "playlist-read-private "
+    "playlist-modify-public "
+    "playlist-modify-private"
+)
 CACHE_PATH = os.path.join(os.path.expanduser("~/spotify_controller"), ".cache")
-
-sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
-    client_id=CLIENT_ID,
-    client_secret=CLIENT_SECRET,
-    redirect_uri=REDIRECT_URI,
-    scope=SCOPE,
-    cache_path=CACHE_PATH
-))
 
 local_queue = []
 console = Console()
+
+if not CLIENT_ID or not CLIENT_SECRET:
+    console.print("[red]Error: CLIENT_ID or CLIENT_SECRET not found in spotify_credentials.env[/red]")
+    exit(1)
+
+try:
+    sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
+        client_id=CLIENT_ID,
+        client_secret=CLIENT_SECRET,
+        redirect_uri=REDIRECT_URI,
+        scope=SCOPE,
+        cache_path=CACHE_PATH
+    ))
+except SpotifyException as e:
+    console.print(f"[red]Spotify authentication failed: {e}[/red]")
+    exit(1)
+except Exception as e:
+    console.print(f"[red]Unexpected error during Spotify setup: {e}[/red]")
+    exit(1)
 
 # ------------------ Help text ------------------ #
 HELP_TEXT = {
     "next": "Skip to next track",
     "prev": "Go to previous track",
     "pause": "Pause or resume playback",
+    "show": "Show currently playing track",
     "volume": "Set playback volume (0-100)",
+    "track": "Search and play a track",
     "shuffle": "Toggle shuffle on/off",
     "repeat": "Cycle repeat mode (off/context/track)",
     "queue": "Show local queue",
     "add": "Search and add a track to queue",
-    "track": "Search and play a track",
-    "show": "Show currently playing track",
     "showlists": "List user playlists",
     "showlist": "List tracks from a selected playlist",
     "playlist": "Play a selected playlist",
@@ -56,6 +73,16 @@ HELP_TEXT = {
 
 # ------------------ Utility ------------------ #
 def safe_call(func, success_msg=None):
+    """
+    Execute a function safely, handling Spotify exceptions and general errors.
+
+    Parameters:
+        func (callable): Function to execute.
+        success_msg (str, optional): Message to display on successful execution.
+
+    Returns:
+        None
+    """
     try:
         func()
         if success_msg:
@@ -67,7 +94,18 @@ def safe_call(func, success_msg=None):
         console.print(f"[red][!] Unexpected error: {e}[/red]")
 
 def get_current_track():
-    """Return current playing track info or None"""
+    """
+    Retrieve the currently playing track info.
+
+    Returns:
+        dict or None: Dictionary containing:
+            - 'title': Track title (str)
+            - 'artists': Comma-separated list of artist names (str)
+            - 'album': Album name (str)
+            - 'progress': Current playback time / total duration (str)
+            - 'is_playing': Boolean indicating if track is playing
+        Returns None if no track is playing or on error.
+    """
     try:
         playback = sp.current_playback()
         if not playback or not playback.get("item"):
@@ -84,10 +122,22 @@ def get_current_track():
         return None
 
 def current_track_alone():
+    """
+    Display the currently playing track and pause until user presses Enter.
+
+    Returns:
+        None
+    """
     current_track()
     console.input("\nPress Enter to continue...")
 
 def current_track():
+    """
+    Display detailed information about the currently playing track in a rich Panel.
+
+    Returns:
+        None
+    """
     track = get_current_track()
     if track:
         status = "▶ Playing" if track["is_playing"] else "⏸ Paused"
@@ -96,6 +146,15 @@ def current_track():
         console.print(Panel("[yellow]No track currently playing[/yellow]", title="Now Playing"))
 
 def print_title(console):
+    """
+    Display the ASCII title/logo if console dimensions are sufficient.
+
+    Parameters:
+        console (Console): Rich Console instance for printing.
+
+    Returns:
+        None
+    """
     TITLE_FILE = Path(__file__).parent / "logos.txt"
     
     width = console.size.width
@@ -114,16 +173,19 @@ def print_title(console):
 
 # ------------------ Command wrappers ------------------ #
 def cmd_next():
+    """Skip to the next track and display the currently playing track."""
     safe_call(lambda: sp.next_track(), "Skipped to next track.")
     current_track()
     console.input("\nPress Enter to continue...")
 
 def cmd_prev():
+    """Go back to the previous track and display the currently playing track."""
     safe_call(lambda: sp.previous_track(), "Went back to previous track.")
     current_track()
     console.input("\nPress Enter to continue...")
 
 def cmd_pause_resume():
+    """Pause playback if playing, or resume playback if paused."""
     playback = sp.current_playback()
     if playback and playback.get("is_playing"):
         safe_call(lambda: sp.pause_playback(), "Playback paused")
@@ -134,6 +196,7 @@ def cmd_pause_resume():
         safe_call(lambda: sp.start_playback(), "Playback resumed")
 
 def cmd_volume():
+    """Prompt user to set volume (0-100) and apply it."""
     vol = console.input("Set volume (0-100): ")
     try:
         vol = max(0, min(100, int(vol)))
@@ -145,6 +208,7 @@ def cmd_volume():
         console.input("Press Enter to continue...")
 
 def cmd_shuffle():
+    """Toggle shuffle mode on the current playback."""
     playback = sp.current_playback()
     if playback:
         current = playback["shuffle_state"]
@@ -156,6 +220,7 @@ def cmd_shuffle():
     console.input("Press Enter to continue...")
 
 def cmd_repeat():
+    """Cycle the repeat mode through 'off', 'context', and 'track'."""
     playback = sp.current_playback()
     if playback:
         states = ["off", "context", "track"]
@@ -168,6 +233,7 @@ def cmd_repeat():
     console.input("Press Enter to continue...")
 
 def cmd_show_queue():
+    """Display the local queue of tracks added by the user."""
     if not local_queue:
         console.print("[yellow]Local queue is empty[/yellow]")
     else:
@@ -182,53 +248,97 @@ def cmd_show_queue():
     console.input("\nPress Enter to continue...")
 
 def cmd_add_track():
-    query = console.input("Track name to add to queue: ").strip()
-    results = sp.search(q=query, type="track", limit=5)["tracks"]["items"]
-    if not results:
-        console.print("[yellow]No tracks found[/yellow]")
-        return
-    table = Table(title="Search Results")
-    table.add_column("Index", style="green")
-    table.add_column("Title", style="yellow")
-    table.add_column("Artists", style="cyan")
-    for i, t in enumerate(results):
-        table.add_row(str(i), t['name'], t['artists'][0]['name'])
-    console.print(table)
-    idx = int(console.input("Select track index: "))
-    if 0 <= idx < len(results):
+    """
+    Search for a track by name, add it to Spotify queue, and append it to local_queue.
+    
+    Prompts the user to select a track from search results.
+    """
+    try:
+        query = console.input("Track name to add to queue: ").strip()
+        if not query:
+            console.print("[red]Track name cannot be empty[/red]")
+            return
+
+        results = sp.search(q=query, type="track", limit=5)["tracks"]["items"]
+        if not results:
+            console.print("[yellow]No tracks found[/yellow]")
+            return
+
+        table = Table(title="Search Results")
+        table.add_column("Index", style="green")
+        table.add_column("Title", style="yellow")
+        table.add_column("Artists", style="cyan")
+        for i, t in enumerate(results):
+            artists = ", ".join(a.get("name", "Unknown") for a in t.get("artists", []))
+            table.add_row(str(i), t.get("name", "Unknown"), artists)
+        console.print(table)
+
+        idx = int(console.input("Select track index: "))
+        if not (0 <= idx < len(results)):
+            raise ValueError("Track index out of range")
         track = results[idx]
-        safe_call(lambda: sp.add_to_queue(track['uri']), f"Added {track['name']} to queue")
+        safe_call(lambda: sp.add_to_queue(track["uri"]), f"Added {track.get('name', 'Unknown')} to queue")
         local_queue.append(track)
-    else:
-        console.print("[red]Invalid track number[/red]")
-    console.input("\nPress Enter to continue...")
+
+    except Exception as e:
+        console.print(f"[red]Something went wrong: {e}[/red]")
+
+    finally:
+        console.input("\nPress Enter to continue...")
 
 def cmd_play_track_and_show_current():
+    """
+    Prompt user to play a track by name and then display the currently playing track.
+    """
     cmd_play_track()
     current_track()
     console.input("\nPress Enter to continue...")
 
 def cmd_play_track():
-    query = console.input("Track name to play: ").strip()
-    results = sp.search(q=query, type="track", limit=5)["tracks"]["items"]
-    if not results:
-        console.print("[yellow]No tracks found[/yellow]")
-        return
-    table = Table(title="Search Results")
-    table.add_column("Index", style="green")
-    table.add_column("Title", style="yellow")
-    table.add_column("Artists", style="cyan")
-    for i, t in enumerate(results):
-        table.add_row(str(i), t['name'], t['artists'][0]['name'])
-    console.print(table)
-    idx = int(console.input("Select track index: "))
-    if 0 <= idx < len(results):
+    """
+    Search for a track by user input and play the selected track.
+
+    Prompts the user to enter a track name, displays search results,
+    and allows the user to select which track to play.
+    """
+    try:
+        query = console.input("Track name to play: ").strip()
+        if not query:
+            console.print("[red]Track name cannot be empty[/red]")
+            return
+
+        results = sp.search(q=query, type="track", limit=5)["tracks"]["items"]
+        if not results:
+            console.print("[yellow]No tracks found[/yellow]")
+            return
+
+        table = Table(title="Search Results")
+        table.add_column("Index", style="green")
+        table.add_column("Title", style="yellow")
+        table.add_column("Artists", style="cyan")
+        for i, t in enumerate(results):
+            artists = ", ".join(a.get("name", "Unknown") for a in t.get("artists", []))
+            table.add_row(str(i), t.get("name", "Unknown"), artists)
+        console.print(table)
+
+        idx_input = console.input("Select track index: ").strip()
+        idx = int(idx_input)
+        if not (0 <= idx < len(results)):
+            raise ValueError("Track index out of range")
+
         track = results[idx]
-        safe_call(lambda: sp.start_playback(uris=[track['uri']]), f"Playing {track['name']}")
-    else:
-        console.print("[red]Invalid track number[/red]")
+        safe_call(lambda: sp.start_playback(uris=[track["uri"]]), f"Playing {track.get('name', 'Unknown')}")
+
+    except Exception as e:
+        console.print(f"[red]Something went wrong: {e}[/red]")
 
 def show_playlist_tracks(playlist_id: str):
+    """
+    Display all tracks in a given playlist.
+
+    Args:
+        playlist_id (str): The Spotify playlist ID to retrieve tracks from.
+    """
     tracks = []
     offset = 0
     limit = 100
@@ -259,220 +369,325 @@ def show_playlist_tracks(playlist_id: str):
         table.add_row(str(i), title, artists)
 
     console.print(table)
-    console.input("\nPress Enter to continue...")
 
 def cmd_show_playlist_tracks():
-    pls = sp.current_user_playlists()["items"]
-    if not pls:
-        console.print("[yellow]No playlists found[/yellow]")
-        return
-
-    table = Table(title="User Playlists")
-    table.add_column("Index", style="green")
-    table.add_column("Name", style="yellow")
-    table.add_column("Tracks", style="cyan")
-    for i, p in enumerate(pls):
-        table.add_row(str(i), p['name'], str(p['tracks']['total']))
-    console.print(table)
-
+    """
+    List user playlists, prompt to select one, and display its tracks.
+    """
     try:
-        idx = int(console.input("Select playlist index: "))
-    except ValueError:
-        console.print("[red]Invalid input[/red]")
-        return
+        pls = sp.current_user_playlists()["items"]
+        if not pls:
+            console.print("[yellow]No playlists found[/yellow]")
+            return
 
-    if 0 <= idx < len(pls):
-        playlist_id = pls[idx]['id']
+        table = Table(title="User Playlists")
+        table.add_column("Index", style="green")
+        table.add_column("Name", style="yellow")
+        table.add_column("Tracks", style="cyan")
+        for i, p in enumerate(pls):
+            table.add_row(str(i), p.get('name', 'Unknown'), str(p.get('tracks', {}).get('total', 0)))
+        console.print(table)
+
+        idx_input = console.input("Select playlist index: ").strip()
+        idx = int(idx_input)
+        if not (0 <= idx < len(pls)):
+            raise ValueError("Playlist index out of range")
+
+        playlist_id = pls[idx].get('id')
+        if not playlist_id:
+            console.print("[red]Selected playlist has no ID[/red]")
+            return
+
         show_playlist_tracks(playlist_id)
-    else:
-        console.print("[red]Invalid playlist number[/red]")
+
+    except ValueError as ve:
+        console.print(f"[red]Invalid input: {ve}[/red]")
+    except Exception as e:
+        console.print(f"[red]Something went wrong: {e}[/red]")
+    finally:
+        console.input("\nPress Enter to continue...")
 
 def cmd_list_playlists():
-    pls = sp.current_user_playlists()["items"]
-    table = Table(title="User Playlists")
-    table.add_column("Index", style="green")
-    table.add_column("Name", style="yellow")
-    table.add_column("Tracks", style="cyan")
-    for i, p in enumerate(pls):
-        table.add_row(str(i), p['name'], str(p['tracks']['total']))
-    console.print(table)
-    console.input("\nPress Enter to continue...")
+    """
+    Display all user playlists in a table with their total track count.
+    """
+    try:
+        pls = sp.current_user_playlists()["items"]
+        if not pls:
+            console.print("[yellow]No playlists found[/yellow]")
+            return
+
+        table = Table(title="User Playlists")
+        table.add_column("Index", style="green")
+        table.add_column("Name", style="yellow")
+        table.add_column("Tracks", style="cyan")
+        for i, p in enumerate(pls):
+            name = p.get('name', 'Unknown')
+            total_tracks = str(p.get('tracks', {}).get('total', 0))
+            table.add_row(str(i), name, total_tracks)
+        console.print(table)
+
+    except Exception as e:
+        console.print(f"[red]Something went wrong: {e}[/red]")
+    finally:
+        console.input("\nPress Enter to continue...")
 
 def cmd_play_playlist():
-    pls = sp.current_user_playlists()["items"]
-    table = Table(title="User Playlists")
-    table.add_column("Index", style="green")
-    table.add_column("Name", style="yellow")
-    for i, p in enumerate(pls):
-        table.add_row(str(i), p['name'])
-    console.print(table)
-    idx = int(console.input("Select playlist index: "))
-    if 0 <= idx < len(pls):
+    """
+    Prompt user to select a playlist to play and display its tracks.
+    """
+    try:
+        pls = sp.current_user_playlists()["items"]
+        if not pls:
+            console.print("[yellow]No playlists found[/yellow]")
+            return
+
+        table = Table(title="User Playlists")
+        table.add_column("Index", style="green")
+        table.add_column("Name", style="yellow")
+        for i, p in enumerate(pls):
+            table.add_row(str(i), p.get('name', 'Unknown'))
+        console.print(table)
+
+        idx_input = console.input("Select playlist index: ").strip()
+        idx = int(idx_input)
+        if not (0 <= idx < len(pls)):
+            raise ValueError("Playlist index out of range")
+
         playlist = pls[idx]
-        safe_call(lambda: sp.start_playback(context_uri=pls[idx]['uri']), f"Playing {pls[idx]['name']}")
-        show_playlist_tracks(playlist['id'])
-    else:
-        console.print("[red]Invalid playlist number[/red]")
+        playlist_uri = playlist.get('uri')
+        playlist_id = playlist.get('id')
+        playlist_name = playlist.get('name', 'Unknown')
+
+        if not playlist_uri or not playlist_id:
+            console.print("[red]Selected playlist is invalid[/red]")
+            return
+
+        safe_call(lambda: sp.start_playback(context_uri=playlist_uri), f"Playing {playlist_name}")
+        show_playlist_tracks(playlist_id)
+
+    except ValueError as ve:
+        console.print(f"[red]Invalid input: {ve}[/red]")
+        console.input("\nPress Enter to continue...")
+    except Exception as e:
+        console.print(f"[red]Something went wrong: {e}[/red]")
         console.input("\nPress Enter to continue...")
 
 def cmd_add_to_playlist():
-    pls = sp.current_user_playlists()["items"]
-    if not pls:
-        console.print("[yellow]No playlists found[/yellow]")
-        return
+    """
+    Add a track to a selected playlist.
 
-    table = Table(title="Your Playlists")
-    table.add_column("Index", style="green")
-    table.add_column("Name", style="yellow")
-    for i, p in enumerate(pls):
-        table.add_row(str(i), p["name"])
-    console.print(table)
-
+    Prompts the user to select a playlist, search for a track,
+    and add the selected track to the chosen playlist.
+    """
     try:
-        idx = int(console.input("Select playlist index: "))
+        pls = sp.current_user_playlists()["items"]
+        if not pls:
+            console.print("[yellow]No playlists found[/yellow]")
+            return
+
+        table = Table(title="Your Playlists")
+        table.add_column("Index", style="green")
+        table.add_column("Name", style="yellow")
+        for i, p in enumerate(pls):
+            table.add_row(str(i), p.get("name", "Unknown"))
+        console.print(table)
+
+        idx_input = console.input("Select playlist index: ").strip()
+        idx = int(idx_input)
         if not (0 <= idx < len(pls)):
-            console.print("[red]Invalid playlist number[/red]")
+            raise ValueError("Playlist index out of range")
+
+        playlist = pls[idx]
+        playlist_id = playlist.get("id")
+        playlist_name = playlist.get("name", "Unknown")
+        if not playlist_id:
+            console.print("[red]Selected playlist is invalid[/red]")
             return
-    except ValueError:
-        console.print("[red]Invalid input[/red]")
-        return
 
-    playlist = pls[idx]
-    playlist_id = playlist["id"]
+        query = console.input("Track name to add: ").strip()
+        if not query:
+            console.print("[red]Track name cannot be empty[/red]")
+            return
 
-    query = console.input("Track name to add: ").strip()
-    results = sp.search(q=query, type="track", limit=5)["tracks"]["items"]
-    if not results:
-        console.print("[yellow]No tracks found[/yellow]")
-        return
+        results = sp.search(q=query, type="track", limit=5)["tracks"]["items"]
+        if not results:
+            console.print("[yellow]No tracks found[/yellow]")
+            return
 
-    table = Table(title="Search Results")
-    table.add_column("Index", style="green")
-    table.add_column("Title", style="yellow")
-    table.add_column("Artists", style="cyan")
-    for i, t in enumerate(results):
-        table.add_row(str(i), t["name"], ", ".join(a["name"] for a in t["artists"]))
-    console.print(table)
+        table = Table(title="Search Results")
+        table.add_column("Index", style="green")
+        table.add_column("Title", style="yellow")
+        table.add_column("Artists", style="cyan")
+        for i, t in enumerate(results):
+            artists = ", ".join(a.get("name", "Unknown") for a in t.get("artists", []))
+            table.add_row(str(i), t.get("name", "Unknown"), artists)
+        console.print(table)
 
-    try:
-        t_idx = int(console.input("Select track index to add: "))
+        t_idx_input = console.input("Select track index to add: ").strip()
+        t_idx = int(t_idx_input)
         if not (0 <= t_idx < len(results)):
-            console.print("[red]Invalid track number[/red]")
+            raise ValueError("Track index out of range")
+
+        track = results[t_idx]
+        track_uri = track.get("uri")
+        track_name = track.get("name", "Unknown")
+
+        if not track_uri:
+            console.print("[red]Selected track is invalid[/red]")
             return
-    except ValueError:
-        console.print("[red]Invalid input[/red]")
-        return
 
-    track = results[t_idx]
-    track_uri = track["uri"]
+        safe_call(
+            lambda: sp.playlist_add_items(playlist_id, [track_uri]),
+            f"Added [bold]{track_name}[/bold] to playlist [cyan]{playlist_name}[/cyan]"
+        )
 
-    safe_call(lambda: sp.playlist_add_items(playlist_id, [track_uri]),
-              f"Added [bold]{track['name']}[/bold] to playlist [cyan]{playlist['name']}[/cyan]")
-    console.input("\nPress Enter to continue...")
+    except ValueError as ve:
+        console.print(f"[red]Invalid input: {ve}[/red]")
+    except Exception as e:
+        console.print(f"[red]Something went wrong: {e}[/red]")
+    finally:
+        console.input("\nPress Enter to continue...")
 
 def cmd_remove_from_playlist():
-    pls = sp.current_user_playlists()["items"]
-    if not pls:
-        console.print("[yellow]No playlists found[/yellow]")
-        return
+    """
+    Remove a track from a selected playlist.
 
-    table = Table(title="Your Playlists")
-    table.add_column("Index", style="green")
-    table.add_column("Name", style="yellow")
-    table.add_column("Tracks", style="cyan")
-
-    for i, p in enumerate(pls):
-        table.add_row(str(i), p["name"], str(p["tracks"]["total"]))
-    console.print(table)
-
+    Prompts the user to select a playlist, lists its tracks,
+    and removes the selected track from the playlist.
+    """
     try:
-        idx = int(console.input("Select playlist index: "))
+        pls = sp.current_user_playlists()["items"]
+        if not pls:
+            console.print("[yellow]No playlists found[/yellow]")
+            return
+
+        table = Table(title="Your Playlists")
+        table.add_column("Index", style="green")
+        table.add_column("Name", style="yellow")
+        table.add_column("Tracks", style="cyan")
+        for i, p in enumerate(pls):
+            name = p.get("name", "Unknown")
+            total_tracks = str(p.get("tracks", {}).get("total", 0))
+            table.add_row(str(i), name, total_tracks)
+        console.print(table)
+
+        idx_input = console.input("Select playlist index: ").strip()
+        idx = int(idx_input)
         if not (0 <= idx < len(pls)):
-            console.print("[red]Invalid playlist number[/red]")
+            raise ValueError("Playlist index out of range")
+
+        playlist = pls[idx]
+        playlist_id = playlist.get("id")
+        playlist_name = playlist.get("name", "Unknown")
+        if not playlist_id:
+            console.print("[red]Selected playlist is invalid[/red]")
             return
-    except ValueError:
-        console.print("[red]Invalid input[/red]")
-        return
 
-    playlist = pls[idx]
-    playlist_id = playlist["id"]
+        tracks = []
+        offset = 0
+        limit = 100
+        while True:
+            response = sp.playlist_items(playlist_id, offset=offset, limit=limit)
+            items = response.get("items", [])
+            if not items:
+                break
+            tracks.extend(items)
+            offset += len(items)
+            if len(items) < limit:
+                break
 
-    tracks = []
-    offset = 0
-    limit = 100
-    while True:
-        response = sp.playlist_items(playlist_id, offset=offset, limit=limit)
-        items = response.get("items", [])
-        if not items:
-            break
-        tracks.extend(items)
-        offset += len(items)
-        if len(items) < limit:
-            break
+        if not tracks:
+            console.print("[yellow]Playlist is empty[/yellow]")
+            return
 
-    if not tracks:
-        console.print("[yellow]Playlist is empty[/yellow]")
-        return
+        table = Table(title=f"Tracks in {playlist_name}")
+        table.add_column("Index", style="green")
+        table.add_column("Title", style="yellow")
+        table.add_column("Artists", style="cyan")
+        for i, item in enumerate(tracks):
+            track = item.get("track", {})
+            title = track.get("name", "Unknown")
+            artists = ", ".join(a.get("name", "Unknown") for a in track.get("artists", []))
+            table.add_row(str(i), title, artists)
+        console.print(table)
 
-    table = Table(title=f"Tracks in {playlist['name']}")
-    table.add_column("Index", style="green")
-    table.add_column("Title", style="yellow")
-    table.add_column("Artists", style="cyan")
-
-    for i, item in enumerate(tracks):
-        track = item["track"]
-        title = track["name"]
-        artists = ", ".join(a["name"] for a in track["artists"])
-        table.add_row(str(i), title, artists)
-    console.print(table)
-
-    try:
-        t_idx = int(console.input("Select track index to remove: "))
+        t_idx_input = console.input("Select track index to remove: ").strip()
+        t_idx = int(t_idx_input)
         if not (0 <= t_idx < len(tracks)):
-            console.print("[red]Invalid track number[/red]")
+            raise ValueError("Track index out of range")
+
+        track = tracks[t_idx].get("track", {})
+        track_uri = track.get("uri")
+        track_name = track.get("name", "Unknown")
+        if not track_uri:
+            console.print("[red]Selected track is invalid[/red]")
             return
-    except ValueError:
-        console.print("[red]Invalid input[/red]")
-        return
 
-    track = tracks[t_idx]["track"]
-    track_uri = track["uri"]
+        safe_call(
+            lambda: sp.playlist_remove_all_occurrences_of_items(playlist_id, [track_uri]),
+            f"Removed [bold]{track_name}[/bold] from playlist [cyan]{playlist_name}[/cyan]"
+        )
 
-    safe_call(lambda: sp.playlist_remove_all_occurrences_of_items(playlist_id, [track_uri]),
-              f"Removed [bold]{track['name']}[/bold] from playlist [cyan]{playlist['name']}[/cyan]")
-
-    console.input("\nPress Enter to continue...")
+    except ValueError as ve:
+        console.print(f"[red]Invalid input: {ve}[/red]")
+    except Exception as e:
+        console.print(f"[red]Something went wrong: {e}[/red]")
+    finally:
+        console.input("\nPress Enter to continue...")
 
 def cmd_create_playlist():
-    """Create a new Spotify playlist"""
-    user = sp.me()["id"]
+    """
+    Prompt user for playlist details and create a new Spotify playlist.
+    """
+    try:
+        user_info = sp.me()
+        user_id = user_info.get("id")
+        if not user_id:
+            console.print("[red]Could not retrieve user ID[/red]")
+            return
 
-    console.print("[bold cyan]--- Create a New Playlist ---[/bold cyan]")
-    name = console.input("Enter playlist name: ").strip()
-    if not name:
-        console.print("[red]Playlist name cannot be empty[/red]")
-        return
+        console.print("[bold cyan]--- Create a New Playlist ---[/bold cyan]")
 
-    desc = console.input("Enter playlist description (optional): ").strip()
-    public_input = console.input("Make playlist public? (y/n): ").strip().lower()
-    public = public_input == "y"
+        name = console.input("Enter playlist name: ").strip()
+        if not name:
+            console.print("[red]Playlist name cannot be empty[/red]")
+            return
 
-    safe_call(
-        lambda: sp.user_playlist_create(user, name, public=public, description=desc),
-        f"Playlist [bold green]{name}[/bold green] created successfully!"
-    )
+        desc = console.input("Enter playlist description (optional): ").strip()
 
-    console.input("\nPress Enter to continue...")
+        public_input = console.input("Make playlist public? (y/n): ").strip().lower()
+        public = public_input == "y"
+
+        safe_call(
+            lambda: sp.user_playlist_create(user_id, name, public=public, description=desc),
+            f"Playlist [bold green]{name}[/bold green] created successfully!"
+        )
+
+    except Exception as e:
+        console.print(f"[red]Something went wrong: {e}[/red]")
+
+    finally:
+        console.input("\nPress Enter to continue...")
 
 def show_help():
-    """Show this help message"""
-    table = Table(title="Available Commands")
-    table.add_column("Command", style="bold green")
-    table.add_column("Description", style="yellow")
-    for name, desc in HELP_TEXT.items():
-        table.add_row(name, desc)
-    console.print(table)
-    console.input("\nPress Enter to continue...")
+    """
+    Display all available commands with descriptions in a table.
+    """
+    try:
+        table = Table(title="Available Commands")
+        table.add_column("Command", style="bold green")
+        table.add_column("Description", style="yellow")
+        for name, desc in HELP_TEXT.items():
+            table.add_row(name, desc)
+        console.print(table)
+
+    except Exception as e:
+        console.print(f"[red]Something went wrong while displaying help: {e}[/red]")
+
+    finally:
+        console.input("\nPress Enter to continue...")
+
 
 # ------------------ Command dictionary ------------------ #
 COMMANDS = {
