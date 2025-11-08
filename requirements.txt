@@ -1,3 +1,4 @@
 spotipy==2.25.1
 rich>=14.1.0
+python-dotenv==1.2.1
 

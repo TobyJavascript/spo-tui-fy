@@ -8,10 +8,15 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from ascii_titles import show_title
+from dotenv import load_dotenv
+
+# ------------------ Load environment variables ------------------ #
+dotenv_path = Path(__file__).parent / "spotify_credentials.env"
+load_dotenv(dotenv_path)
 
 # ------------------ Spotify setup ------------------ #
-CLIENT_ID = "YOUR_CLIENT_ID"
-CLIENT_SECRET = "YOUR_CLIENT_SECRET"
+CLIENT_ID = os.getenv("CLIENT_ID")
+CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 REDIRECT_URI = "http://127.0.0.1:8888/callback"
 SCOPE = "user-read-playback-state user-modify-playback-state playlist-read-private"
 CACHE_PATH = os.path.join(os.path.expanduser("~/spotify_controller"), ".cache")
