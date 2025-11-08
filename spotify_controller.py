@@ -39,8 +39,12 @@ HELP_TEXT = {
     "add": "Search and add a track to queue",
     "track": "Search and play a track",
     "show": "Show currently playing track",
-    "playlists": "List user playlists",
+    "showlists": "List user playlists",
+    "showlist": "List tracks from a selected playlist",
     "playlist": "Play a selected playlist",
+    "createlist": "Create a new playlist",
+    "addtolist": "Add a track to a playlist",
+    "removefromlist": "Remove a track from a playlist",
     "help": "Show this help message",
     "quit": "Exit the controller"
 }
@@ -219,6 +223,65 @@ def cmd_play_track():
     else:
         console.print("[red]Invalid track number[/red]")
 
+def show_playlist_tracks(playlist_id: str):
+    tracks = []
+    offset = 0
+    limit = 100
+
+    while True:
+        response = sp.playlist_items(playlist_id, offset=offset, limit=limit)
+        items = response['items']
+        if not items:
+            break
+        tracks.extend(items)
+        offset += len(items)
+        if len(items) < limit:
+            break
+
+    if not tracks:
+        console.print("[yellow]Playlist is empty[/yellow]")
+        return
+
+    table = Table(title="Playlist Tracks")
+    table.add_column("Index", style="green")
+    table.add_column("Title", style="yellow")
+    table.add_column("Artists", style="cyan")
+
+    for i, item in enumerate(tracks, 1):
+        track = item["track"]
+        title = track["name"]
+        artists = ", ".join(a["name"] for a in track["artists"])
+        table.add_row(str(i), title, artists)
+
+    console.print(table)
+    console.input("\nPress Enter to continue...")
+
+def cmd_show_playlist_tracks():
+    pls = sp.current_user_playlists()["items"]
+    if not pls:
+        console.print("[yellow]No playlists found[/yellow]")
+        return
+
+    table = Table(title="User Playlists")
+    table.add_column("Index", style="green")
+    table.add_column("Name", style="yellow")
+    table.add_column("Tracks", style="cyan")
+    for i, p in enumerate(pls):
+        table.add_row(str(i), p['name'], str(p['tracks']['total']))
+    console.print(table)
+
+    try:
+        idx = int(console.input("Select playlist index: "))
+    except ValueError:
+        console.print("[red]Invalid input[/red]")
+        return
+
+    if 0 <= idx < len(pls):
+        playlist_id = pls[idx]['id']
+        show_playlist_tracks(playlist_id)
+    else:
+        console.print("[red]Invalid playlist number[/red]")
+
 def cmd_list_playlists():
     pls = sp.current_user_playlists()["items"]
     table = Table(title="User Playlists")
@@ -240,9 +303,160 @@ def cmd_play_playlist():
     console.print(table)
     idx = int(console.input("Select playlist index: "))
     if 0 <= idx < len(pls):
+        playlist = pls[idx]
         safe_call(lambda: sp.start_playback(context_uri=pls[idx]['uri']), f"Playing {pls[idx]['name']}")
+        show_playlist_tracks(playlist['id'])
     else:
         console.print("[red]Invalid playlist number[/red]")
+        console.input("\nPress Enter to continue...")
+
+def cmd_add_to_playlist():
+    pls = sp.current_user_playlists()["items"]
+    if not pls:
+        console.print("[yellow]No playlists found[/yellow]")
+        return
+
+    table = Table(title="Your Playlists")
+    table.add_column("Index", style="green")
+    table.add_column("Name", style="yellow")
+    for i, p in enumerate(pls):
+        table.add_row(str(i), p["name"])
+    console.print(table)
+
+    try:
+        idx = int(console.input("Select playlist index: "))
+        if not (0 <= idx < len(pls)):
+            console.print("[red]Invalid playlist number[/red]")
+            return
+    except ValueError:
+        console.print("[red]Invalid input[/red]")
+        return
+
+    playlist = pls[idx]
+    playlist_id = playlist["id"]
+
+    query = console.input("Track name to add: ").strip()
+    results = sp.search(q=query, type="track", limit=5)["tracks"]["items"]
+    if not results:
+        console.print("[yellow]No tracks found[/yellow]")
+        return
+
+    table = Table(title="Search Results")
+    table.add_column("Index", style="green")
+    table.add_column("Title", style="yellow")
+    table.add_column("Artists", style="cyan")
+    for i, t in enumerate(results):
+        table.add_row(str(i), t["name"], ", ".join(a["name"] for a in t["artists"]))
+    console.print(table)
+
+    try:
+        t_idx = int(console.input("Select track index to add: "))
+        if not (0 <= t_idx < len(results)):
+            console.print("[red]Invalid track number[/red]")
+            return
+    except ValueError:
+        console.print("[red]Invalid input[/red]")
+        return
+
+    track = results[t_idx]
+    track_uri = track["uri"]
+
+    safe_call(lambda: sp.playlist_add_items(playlist_id, [track_uri]),
+              f"Added [bold]{track['name']}[/bold] to playlist [cyan]{playlist['name']}[/cyan]")
+    console.input("\nPress Enter to continue...")
+
+def cmd_remove_from_playlist():
+    pls = sp.current_user_playlists()["items"]
+    if not pls:
+        console.print("[yellow]No playlists found[/yellow]")
+        return
+
+    table = Table(title="Your Playlists")
+    table.add_column("Index", style="green")
+    table.add_column("Name", style="yellow")
+    table.add_column("Tracks", style="cyan")
+
+    for i, p in enumerate(pls):
+        table.add_row(str(i), p["name"], str(p["tracks"]["total"]))
+    console.print(table)
+
+    try:
+        idx = int(console.input("Select playlist index: "))
+        if not (0 <= idx < len(pls)):
+            console.print("[red]Invalid playlist number[/red]")
+            return
+    except ValueError:
+        console.print("[red]Invalid input[/red]")
+        return
+
+    playlist = pls[idx]
+    playlist_id = playlist["id"]
+
+    tracks = []
+    offset = 0
+    limit = 100
+    while True:
+        response = sp.playlist_items(playlist_id, offset=offset, limit=limit)
+        items = response.get("items", [])
+        if not items:
+            break
+        tracks.extend(items)
+        offset += len(items)
+        if len(items) < limit:
+            break
+
+    if not tracks:
+        console.print("[yellow]Playlist is empty[/yellow]")
+        return
+
+    table = Table(title=f"Tracks in {playlist['name']}")
+    table.add_column("Index", style="green")
+    table.add_column("Title", style="yellow")
+    table.add_column("Artists", style="cyan")
+
+    for i, item in enumerate(tracks):
+        track = item["track"]
+        title = track["name"]
+        artists = ", ".join(a["name"] for a in track["artists"])
+        table.add_row(str(i), title, artists)
+    console.print(table)
+
+    try:
+        t_idx = int(console.input("Select track index to remove: "))
+        if not (0 <= t_idx < len(tracks)):
+            console.print("[red]Invalid track number[/red]")
+            return
+    except ValueError:
+        console.print("[red]Invalid input[/red]")
+        return
+
+    track = tracks[t_idx]["track"]
+    track_uri = track["uri"]
+
+    safe_call(lambda: sp.playlist_remove_all_occurrences_of_items(playlist_id, [track_uri]),
+              f"Removed [bold]{track['name']}[/bold] from playlist [cyan]{playlist['name']}[/cyan]")
+
+    console.input("\nPress Enter to continue...")
+
+def cmd_create_playlist():
+    """Create a new Spotify playlist"""
+    user = sp.me()["id"]
+
+    console.print("[bold cyan]--- Create a New Playlist ---[/bold cyan]")
+    name = console.input("Enter playlist name: ").strip()
+    if not name:
+        console.print("[red]Playlist name cannot be empty[/red]")
+        return
+
+    desc = console.input("Enter playlist description (optional): ").strip()
+    public_input = console.input("Make playlist public? (y/n): ").strip().lower()
+    public = public_input == "y"
+
+    safe_call(
+        lambda: sp.user_playlist_create(user, name, public=public, description=desc),
+        f"Playlist [bold green]{name}[/bold green] created successfully!"
+    )
+
     console.input("\nPress Enter to continue...")
 
 def show_help():
@@ -267,8 +481,12 @@ COMMANDS = {
     "add": cmd_add_track,
     "track": cmd_play_track_and_show_current,
     "show": current_track_alone,
-    "playlists": cmd_list_playlists,
+    "showlists": cmd_list_playlists,
+    "showlist": cmd_show_playlist_tracks,
     "playlist": cmd_play_playlist,
+    "createlist": cmd_create_playlist,
+    "addtolist": cmd_add_to_playlist,
+    "removefromlist": cmd_remove_from_playlist,
     "help": show_help,
     "quit": exit,
 }
