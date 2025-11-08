@@ -97,7 +97,7 @@ echo "Environment file created at $ENV_FILE"
 
 # --- Copy remaining project files to project directory ---
 echo "Copying project files..."
-cp -r spotify_controller.py ascii_titles.py logos.txt requirements.txt "$PROJECT_DIR"/
+cp -r src/* "$PROJECT_DIR"/
 
 # --- Set up Python virtual environment ---
 VENV_DIR="$HOME/spotify_env"

@@ -33,9 +33,9 @@ CLIENT_SECRET=$CLIENT_SECRET
 "@ | Out-File -FilePath $ENV_FILE -Encoding ASCII -Force
 Write-Host "Created Spotify credentials env file at $ENV_FILE"
 
-# --- Copy Python scripts and resources ---
-Write-Host "Copying script files..."
-Copy-Item -Path "spotify_controller.py", "ascii_titles.py", "logos.txt", "requirements.txt" -Destination $PROJECT_DIR -Force
+# --- Copy Python scripts and resources from src/ ---
+Write-Host "Copying script files from src/..."
+Copy-Item -Path "src\*" -Destination $PROJECT_DIR -Recurse -Force
 
 # --- Create Python virtual environment ---
 $VENV_DIR = "$env:USERPROFILE\spotify_env"
