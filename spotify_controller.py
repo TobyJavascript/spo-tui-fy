@@ -13,7 +13,7 @@ from ascii_titles import show_title
 CLIENT_ID = "YOUR_CLIENT_ID"
 CLIENT_SECRET = "YOUR_CLIENT_SECRET"
 REDIRECT_URI = "http://127.0.0.1:8888/callback"
-SCOPE = "user-read-playback-state user-modify-playback-state"
+SCOPE = "user-read-playback-state user-modify-playback-state playlist-read-private"
 CACHE_PATH = os.path.join(os.path.expanduser("~/spotify_controller"), ".cache")
 
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
