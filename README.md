@@ -13,6 +13,7 @@
 
 ## Supported Distros
 - Debian-based
+- Arch-based
 - Windows 11
 - All systems that can run python (with manual setup).
 
@@ -45,31 +46,43 @@ This script will:
 - Install required packages and dependencies.
 - Set up a Python virtual environment.
 - Install Python libraries listed in requirements.txt.
-- Set up your Spotify API credentials (you need to fill in your Client ID, Client Secret, and Redirect URI in the script).
+- Set up your Spotify API credentials (you need to fill in your Client ID, and Client Secret in the script).
 - Create a shortcut command (spotuify) for easy access.
 - Create `.env` file with credentials from user input.
 
-#### Debian-based
+#### Linux
+The setup script supports **Debian-based** and **Arch-based** distributions.
+Simply run the `linux-setup.sh` script to begin:
 ```bash
-chmod +x debian-setup.sh
-./debian-setup.sh
+chmod +x linux-setup.sh
+./linux-setup.sh
 ```
+You’ll be prompted to select your distribution. Choose the option that matches your system.
 
 #### Windows 11
 **IMPORTANT:** For the Windows version, make sure Python is installed and added to PATH before running setup.
 ```powershell
-# Open PowerShell as Administrator
 Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 .\windows-setup.ps1
 ```
 
 ### Step 4: Run the Application
-Once the setup is complete, you can start the Spotify TUI Control Panel by running:
+Once the setup is complete, you can:
+
+#### Linux
+Launch the Spotify TUI Control Panel on **linux** by running:
 ```bash
 spotuify
 ```
 
-Or manually running python controller:
+#### Windows 11
+Launch the panel on **windows** by running the batch script:
+```powershell
+.\spotuify.bat
+```
+
+#### Python
+Or manually run the python script:
 ```bash
 python spotify_controller.py
 ```
