@@ -71,9 +71,10 @@ You’ll be prompted to select your distribution. Choose the option that matches
 
 #### Windows 11
 **IMPORTANT:** For the Windows version, make sure Python is installed and added to PATH before running setup.
+
+You can run the setup script using PowerShell with elevated permissions:
 ```powershell
-Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
-.\windows-setup.ps1
+powershell -ExecutionPolicy Bypass -File .\windows-setup.ps1
 ```
 
 ### Step 4: Run the Application
