@@ -9,6 +9,7 @@ from rich.panel import Panel
 from rich.table import Table
 from ascii_titles import show_title
 from dotenv import load_dotenv
+import time
 
 # ------------------ Load environment variables ------------------ #
 dotenv_path = Path(__file__).parent / "spotify_credentials.env"
@@ -175,12 +176,14 @@ def print_title(console):
 def cmd_next():
     """Skip to the next track and display the currently playing track."""
     safe_call(lambda: sp.next_track(), "Skipped to next track.")
+    time.sleep(0.5)
     current_track()
     console.input("\nPress Enter to continue...")
 
 def cmd_prev():
     """Go back to the previous track and display the currently playing track."""
     safe_call(lambda: sp.previous_track(), "Went back to previous track.")
+    time.sleep(0.5)
     current_track()
     console.input("\nPress Enter to continue...")
 
@@ -291,6 +294,7 @@ def cmd_play_track_and_show_current():
     Prompt user to play a track by name and then display the currently playing track.
     """
     cmd_play_track()
+    time.sleep(0.5)
     current_track()
     console.input("\nPress Enter to continue...")
 
@@ -468,9 +472,9 @@ def cmd_play_playlist():
 
     except ValueError as ve:
         console.print(f"[red]Invalid input: {ve}[/red]")
-        console.input("\nPress Enter to continue...")
     except Exception as e:
         console.print(f"[red]Something went wrong: {e}[/red]")
+    finally:
         console.input("\nPress Enter to continue...")
 
 def cmd_add_to_playlist():
