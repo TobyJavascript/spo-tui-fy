@@ -40,7 +40,7 @@
 
 ```bash
 git clone https://github.com/TobyJavascript/spo-tui-fy.git
-cd spotify-tui-control-panel
+cd spo-tui-fy
 ```
 
 ### Step 2: Configure Spotify API Credentials
