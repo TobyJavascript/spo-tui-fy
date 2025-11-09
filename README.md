@@ -87,7 +87,7 @@ spotuify
 ```
 
 #### Windows 11
-Launch the panel on **windows** by running the batch script:
+Launch the panel on **windows** by running the batch script saved to your user directory:
 ```powershell
 .\spotuify.bat
 ```
