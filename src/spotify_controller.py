@@ -52,24 +52,24 @@ except Exception as e:
 
 # ------------------ Help text ------------------ #
 HELP_TEXT = {
-    "next": "Skip to next track",
-    "prev": "Go to previous track",
+    "next, n": "Skip to next track",
+    "prev, p": "Go to previous track",
     "pause": "Pause or resume playback",
-    "show": "Show currently playing track",
-    "volume": "Set playback volume (0-100)",
-    "track": "Search and play a track",
-    "shuffle": "Toggle shuffle on/off",
-    "repeat": "Cycle repeat mode (off/context/track)",
-    "queue": "Show local queue",
-    "add": "Search and add a track to queue",
-    "showlists": "List user playlists",
-    "showlist": "List tracks from a selected playlist",
-    "playlist": "Play a selected playlist",
-    "createlist": "Create a new playlist",
-    "addtolist": "Add a track to a playlist",
-    "removefromlist": "Remove a track from a playlist",
-    "help": "Show this help message",
-    "quit": "Exit the controller"
+    "show, s": "Show currently playing track",
+    "volume, v": "Set playback volume (0-100)",
+    "track, t": "Search and play a track",
+    "shuffle, sh": "Toggle shuffle on/off",
+    "repeat, re": "Cycle repeat mode (off/context/track)",
+    "queue, qu": "Show local queue",
+    "add, a": "Search and add a track to queue",
+    "showlists, sls": "List user playlists",
+    "showlist, sl": "List tracks from a selected playlist",
+    "playlist, pl": "Play a selected playlist",
+    "createlist, cl": "Create a new playlist",
+    "addtolist, atl": "Add a track to a playlist",
+    "removefromlist, rfl": "Remove a track from a playlist",
+    "help, h": "Show this help message",
+    "quit, q": "Exit the controller"
 }
 
 # ------------------ Utility ------------------ #
@@ -122,16 +122,6 @@ def get_current_track():
     except Exception:
         return None
 
-def current_track_alone():
-    """
-    Display the currently playing track and pause until user presses Enter.
-
-    Returns:
-        None
-    """
-    current_track()
-    console.input("\nPress Enter to continue...")
-
 def current_track():
     """
     Display detailed information about the currently playing track in a rich Panel.
@@ -164,9 +154,9 @@ def print_title(console):
     index = 5
     indent = 2
 
-    if width > 49 and height > 17:
+    if width > 59 and height > 17:
 
-        if width <= 67 or height <= 27:
+        if width <= 92 or height <= 42:
             index = 2
             indent = 3
 
@@ -178,25 +168,21 @@ def cmd_next():
     safe_call(lambda: sp.next_track(), "Skipped to next track.")
     time.sleep(0.5)
     current_track()
-    console.input("\nPress Enter to continue...")
 
 def cmd_prev():
     """Go back to the previous track and display the currently playing track."""
     safe_call(lambda: sp.previous_track(), "Went back to previous track.")
     time.sleep(0.5)
     current_track()
-    console.input("\nPress Enter to continue...")
 
 def cmd_pause_resume():
     """Pause playback if playing, or resume playback if paused."""
     playback = sp.current_playback()
     if playback and playback.get("is_playing"):
         safe_call(lambda: sp.pause_playback(), "Playback paused")
-        current_track()
-        console.input("\nPress Enter to unpause...")
-        safe_call(lambda: sp.start_playback(), "Playback resumed")
     else:
         safe_call(lambda: sp.start_playback(), "Playback resumed")
+    current_track()
 
 def cmd_volume():
     """Prompt user to set volume (0-100) and apply it."""
@@ -207,8 +193,6 @@ def cmd_volume():
         console.print(f"\nVolume is now: [cyan]{vol}%[/cyan]")
     except ValueError:
         console.print("[red]Invalid input. Must be 0-100[/red]")
-    finally:
-        console.input("Press Enter to continue...")
 
 def cmd_shuffle():
     """Toggle shuffle mode on the current playback."""
@@ -220,7 +204,6 @@ def cmd_shuffle():
         console.print(f"\nCurrent shuffle state: [cyan]{new_state}[/cyan]")
     else:
         console.print("[red]No active playback found[/red]")
-    console.input("Press Enter to continue...")
 
 def cmd_repeat():
     """Cycle the repeat mode through 'off', 'context', and 'track'."""
@@ -233,7 +216,6 @@ def cmd_repeat():
         console.print(f"\nCurrent repeat state: [cyan]{next_state}[/cyan]")
     else:
         console.print("[red]No active playback found[/red]")
-    console.input("Press Enter to continue...")
 
 def cmd_show_queue():
     """Display the local queue of tracks added by the user."""
@@ -248,7 +230,6 @@ def cmd_show_queue():
             table.add_row(str(i+1), t['name'], t['artists'][0]['name'])
         console.print(table)
     current_track()
-    console.input("\nPress Enter to continue...")
 
 def cmd_add_track():
     """
@@ -286,9 +267,6 @@ def cmd_add_track():
     except Exception as e:
         console.print(f"[red]Something went wrong: {e}[/red]")
 
-    finally:
-        console.input("\nPress Enter to continue...")
-
 def cmd_play_track_and_show_current():
     """
     Prompt user to play a track by name and then display the currently playing track.
@@ -296,7 +274,6 @@ def cmd_play_track_and_show_current():
     cmd_play_track()
     time.sleep(0.5)
     current_track()
-    console.input("\nPress Enter to continue...")
 
 def cmd_play_track():
     """
@@ -408,8 +385,6 @@ def cmd_show_playlist_tracks():
         console.print(f"[red]Invalid input: {ve}[/red]")
     except Exception as e:
         console.print(f"[red]Something went wrong: {e}[/red]")
-    finally:
-        console.input("\nPress Enter to continue...")
 
 def cmd_list_playlists():
     """
@@ -433,8 +408,6 @@ def cmd_list_playlists():
 
     except Exception as e:
         console.print(f"[red]Something went wrong: {e}[/red]")
-    finally:
-        console.input("\nPress Enter to continue...")
 
 def cmd_play_playlist():
     """
@@ -469,13 +442,13 @@ def cmd_play_playlist():
 
         safe_call(lambda: sp.start_playback(context_uri=playlist_uri), f"Playing {playlist_name}")
         show_playlist_tracks(playlist_id)
+        time.sleep(0.5)
+        current_track()
 
     except ValueError as ve:
         console.print(f"[red]Invalid input: {ve}[/red]")
     except Exception as e:
         console.print(f"[red]Something went wrong: {e}[/red]")
-    finally:
-        console.input("\nPress Enter to continue...")
 
 def cmd_add_to_playlist():
     """
@@ -550,8 +523,6 @@ def cmd_add_to_playlist():
         console.print(f"[red]Invalid input: {ve}[/red]")
     except Exception as e:
         console.print(f"[red]Something went wrong: {e}[/red]")
-    finally:
-        console.input("\nPress Enter to continue...")
 
 def cmd_remove_from_playlist():
     """
@@ -637,8 +608,6 @@ def cmd_remove_from_playlist():
         console.print(f"[red]Invalid input: {ve}[/red]")
     except Exception as e:
         console.print(f"[red]Something went wrong: {e}[/red]")
-    finally:
-        console.input("\nPress Enter to continue...")
 
 def cmd_create_playlist():
     """
@@ -671,9 +640,6 @@ def cmd_create_playlist():
     except Exception as e:
         console.print(f"[red]Something went wrong: {e}[/red]")
 
-    finally:
-        console.input("\nPress Enter to continue...")
-
 def show_help():
     """
     Display all available commands with descriptions in a table.
@@ -689,41 +655,60 @@ def show_help():
     except Exception as e:
         console.print(f"[red]Something went wrong while displaying help: {e}[/red]")
 
-    finally:
-        console.input("\nPress Enter to continue...")
 
 
 # ------------------ Command dictionary ------------------ #
 COMMANDS = {
     "next": cmd_next,
+    "n": cmd_next,
     "prev": cmd_prev,
+    "p": cmd_prev,
     "pause": cmd_pause_resume,
     "volume": cmd_volume,
+    "v": cmd_volume,
     "shuffle": cmd_shuffle,
+    "sh": cmd_shuffle,
     "repeat": cmd_repeat,
+    "re": cmd_repeat,
     "queue": cmd_show_queue,
+    "qu": cmd_show_queue,
     "add": cmd_add_track,
+    "a": cmd_add_track,
     "track": cmd_play_track_and_show_current,
-    "show": current_track_alone,
+    "t": cmd_play_track_and_show_current,
+    "show": current_track,
+    "s": current_track,
     "showlists": cmd_list_playlists,
+    "sls": cmd_list_playlists,
     "showlist": cmd_show_playlist_tracks,
+    "sl": cmd_show_playlist_tracks,
     "playlist": cmd_play_playlist,
+    "pl": cmd_play_playlist,
     "createlist": cmd_create_playlist,
+    "cl": cmd_create_playlist,
     "addtolist": cmd_add_to_playlist,
+    "atl": cmd_add_to_playlist,
     "removefromlist": cmd_remove_from_playlist,
+    "rfl": cmd_remove_from_playlist,
     "help": show_help,
+    "h": show_help,
     "quit": exit,
+    "q": exit
 }
 
 # ------------------ Main Loop ------------------ #
 def main():
+    console.clear()
+    print_title(console)
+    console.print(Panel("[bold cyan]Spotify Controller[/bold cyan]\nType a command (help to list)", expand=False))
+    
     while True:
-        console.clear()
-
-        print_title(console)
-
-        console.print(Panel("[bold cyan]Spotify Controller[/bold cyan]\nType a command (help to list)", expand=False))
         cmd = console.input("Command: ").strip().lower()
+        console.clear()
+        
+        print_title(console)
+        console.print(Panel("[bold cyan]Spotify Controller[/bold cyan]\nType a command (help to list)", expand=False))
+        console.print("Command: " + cmd)
         if cmd in COMMANDS:
             COMMANDS[cmd]()
         else:

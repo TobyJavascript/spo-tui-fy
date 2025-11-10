@@ -1,6 +1,15 @@
 # ------------------ Setup Spotify Controller on Windows ------------------ #
 $ErrorActionPreference = "Stop"
-
+Write-Host ""
+Write-Host "   _____                 ________  ______     ____     
+  / ___/____  ____      /_  __/ / / /  _/    / __/_  __
+  \__ \/ __ \/ __ \______/ / / / / // /_____/ /_/ / / /
+ ___/ / /_/ / /_/ /_____/ / / /_/ // /_____/ __/ /_/ / 
+/____/ .___/\____/     /_/  \____/___/    /_/  \__, /  
+    /_/                                       /____/   "
+Write-Host ""
+Write-Host "Welcome to Spo-TUI-fy setup script!" -ForegroundColor Cyan
+Write-Host ""
 Write-Host "Setting up Spotify Control Panel..." -ForegroundColor Cyan
 
 # --- Check for Python installation ---
@@ -74,11 +83,5 @@ python "$PROJECT_DIR\spotify_controller.py" %*
 "@
 $batContent | Out-File -FilePath $BAT_PATH -Encoding ASCII -Force
 
-Write-Host "   _____                 ________  ______     ____     
-  / ___/____  ____      /_  __/ / / /  _/    / __/_  __
-  \__ \/ __ \/ __ \______/ / / / / // /_____/ /_/ / / /
- ___/ / /_/ / /_/ /_____/ / / /_/ // /_____/ __/ /_/ / 
-/____/ .___/\____/     /_/  \____/___/    /_/  \__, /  
-    /_/                                       /____/   "
 Write-Host "`nSetup complete!" -ForegroundColor Green
 Write-Host "You can now control Spotify with batch script spotuify.bat"

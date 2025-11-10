@@ -2,6 +2,14 @@
 set -e
 
 # --- Determine package manager based on user input ---
+echo "   _____                 ________  ______     ____     
+  / ___/____  ____      /_  __/ / / /  _/    / __/_  __
+  \__ \/ __ \/ __ \______/ / / / / // /_____/ /_/ / / /
+ ___/ / /_/ / /_/ /_____/ / / /_/ // /_____/ __/ /_/ / 
+/____/ .___/\____/     /_/  \____/___/    /_/  \__, /  
+    /_/                                       /____/   "
+echo ""
+echo "Welcome to Spo-TUI-fy setup script!"
 echo ""
 echo "Supported Linux distributions:"
 echo "  [0] Debian-based"
@@ -122,13 +130,6 @@ EOF
 sudo chmod +x /usr/local/bin/spotuify
 
 # --- ASCII Art and Finish Message ---
-echo ""
-echo "   _____                 ________  ______     ____     
-  / ___/____  ____      /_  __/ / / /  _/    / __/_  __
-  \__ \/ __ \/ __ \______/ / / / / // /_____/ /_/ / / /
- ___/ / /_/ / /_/ /_____/ / / /_/ // /_____/ __/ /_/ / 
-/____/ .___/\____/     /_/  \____/___/    /_/  \__, /  
-    /_/                                       /____/   "
 echo ""
 echo "Setup complete!"
 echo "You can now control Spotify with the command: spotuify"
