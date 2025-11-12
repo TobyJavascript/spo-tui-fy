@@ -26,7 +26,7 @@ $CLIENT_ID = Read-Host "Enter your Spotify CLIENT_ID"
 $CLIENT_SECRET = Read-Host "Enter your Spotify CLIENT_SECRET"
 
 # --- Create project directory ---
-$PROJECT_DIR = "$env:USERPROFILE\spotify_controller"
+$PROJECT_DIR = "$env:USERPROFILE\spotuify"
 if (-not (Test-Path $PROJECT_DIR)) {
     New-Item -ItemType Directory -Path $PROJECT_DIR | Out-Null
     Write-Host "Created project directory at $PROJECT_DIR"
@@ -47,7 +47,7 @@ Write-Host "Copying script files from src/..."
 Copy-Item -Path "src\*" -Destination $PROJECT_DIR -Recurse -Force
 
 # --- Create Python virtual environment ---
-$VENV_DIR = "$env:USERPROFILE\spotify_env"
+$VENV_DIR = "$env:USERPROFILE\spotuify_env"
 if (-not (Test-Path $VENV_DIR)) {
     python -m venv $VENV_DIR
     Write-Host "Created Python virtual environment at $VENV_DIR"
@@ -79,7 +79,7 @@ $batContent = @"
 @echo off
 REM Activates virtual environment and runs Spotify Controller
 CALL "$VENV_DIR\Scripts\Activate.bat"
-python "$PROJECT_DIR\spotify_controller.py" %*
+python "$PROJECT_DIR\rich_main.py" %*
 "@
 $batContent | Out-File -FilePath $BAT_PATH -Encoding ASCII -Force
 

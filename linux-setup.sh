@@ -88,7 +88,7 @@ read -p "Enter your Spotify CLIENT_ID: " CLIENT_ID
 read -p "Enter your Spotify CLIENT_SECRET: " CLIENT_SECRET
 
 # --- Create project directory in home ---
-PROJECT_DIR="$HOME/spotify_controller"
+PROJECT_DIR="$HOME/spotuify"
 if [ ! -d "$PROJECT_DIR" ]; then
     mkdir -p "$PROJECT_DIR"
     echo "Created project directory at $PROJECT_DIR"
@@ -108,7 +108,7 @@ echo "Copying project files..."
 cp -r src/* "$PROJECT_DIR"/
 
 # --- Set up Python virtual environment ---
-VENV_DIR="$HOME/spotify_env"
+VENV_DIR="$HOME/spotuify_env"
 if [ ! -d "$VENV_DIR" ]; then
     python3 -m venv "$VENV_DIR"
     echo "Created Python virtual environment at $VENV_DIR"
@@ -124,8 +124,8 @@ pip install -r "$PROJECT_DIR/requirements.txt"
 echo "Creating shortcut command 'spotuify'..."
 cat << EOF | sudo tee /usr/local/bin/spotuify > /dev/null
 #!/bin/bash
-source "\$HOME/spotify_env/bin/activate"
-python3 "\$HOME/spotify_controller/spotify_controller.py" "\$@"
+source "\$HOME/spotuify_env/bin/activate"
+python3 "\$HOME/spotuify/rich_main.py" "\$@"
 EOF
 sudo chmod +x /usr/local/bin/spotuify
 

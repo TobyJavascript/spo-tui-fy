@@ -26,7 +26,7 @@ SCOPE = (
     "playlist-modify-public "
     "playlist-modify-private"
 )
-CACHE_PATH = os.path.join(os.path.expanduser("~/spotify_controller"), ".cache")
+CACHE_PATH = os.path.join(os.path.expanduser("~/spotuify"), ".cache")
 
 local_queue = []
 console = Console()
