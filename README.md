@@ -95,7 +95,7 @@ Launch the panel on **windows** by running the batch script saved to your user d
 #### Python
 Or manually run the python script:
 ```bash
-python spotify_controller.py
+python rich_main.py
 ```
 ---
 
