@@ -1,0 +1,54 @@
+Grid {
+    layout: grid;
+    grid-size: 9 9;
+    grid-rows: 1fr;
+    grid-columns: 1fr;
+    grid_gutter:0 1;
+}
+
+#title-box {
+    border: round green;
+    content-align: center middle;
+    column-span: 3;
+    row-span: 2;
+    width: 100%;
+    height: 100%;
+}
+
+#list-box {
+    border: round green;
+    content-align: center middle;
+    column-span: 3;
+    row-span: 6;
+    width: 100%;
+    height: 100%;
+}
+
+#image-box {
+    border: round green;
+    content-align: center middle;
+    column-span: 6;
+    row-span: 6;
+    width: 100%;
+    height: 100%;
+}
+
+#song-box {
+    border: round green;
+    content-align: center middle;
+    column-span: 6;
+    row-span: 2;
+    width: 100%;
+    height: 100%;
+}
+
+#command-box {
+    column-span: 9;
+    row-span: 1;
+    width: 100%;
+    height: 100%;
+}
+
+Footer {
+    dock: bottom;
+}
